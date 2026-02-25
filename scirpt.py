@@ -1,6 +1,10 @@
 import csv
 from dataclasses import dataclass
 from typing import List
+import os
+import shutil
+from datetime import datetime
+from pathlib import Path
 
 @dataclass
 class Asset:
@@ -94,7 +98,11 @@ class DataManager:
                     cls.AssetData.append(item)
 
     @classmethod
-    def generate_report(cls, output_file='Compliance_Report.txt'):
+    def generate_report(cls):
+        # For adding the date to the compilance date
+        timestamp = datetime.now().strftime("%m%d%Y")
+        report_name = f"Compliance_Report{timestamp}.txt"
+
         # CASE INSENSITIVE: Normalize serials to uppercase and strip spaces
         non_compliant_sns = {
             device.SerialNumber.strip().upper() 
@@ -106,7 +114,7 @@ class DataManager:
             for asset in cls.AssetData if asset.serial_number
         }
 
-        with open(output_file, mode='w', encoding='utf-8') as f:
+        with open(report_name, mode='w', encoding='utf-8') as f:
             f.write("COMPLIANCE AUDIT REPORT\n")
             f.write("="*40 + "\n\n")
 
@@ -132,9 +140,45 @@ class DataManager:
             f.write(f"Total Non-Compliant Matches: {match_count}\n")
             f.write(f"Total Devices Missing from Inventory: {missing_count}\n")
         
-        print(f"Report successfully generated: {output_file}")
+        print(f"Report successfully generated: {report_name}")
+        return report_name
+
+    @classmethod
+    def archive_file(cls, report_name):
+        timestamp = datetime.now().strftime("%m%d%Y")
+        folder_name = f"Report{timestamp}"
+
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+            print(f"Created folder: {folder_name}")
+
+        files_to_move = [
+            'assets.csv',
+            'noncompliance.csv',
+            report_name
+        ]
+
+        for file in files_to_move:
+            if os.path.exists(file):
+                shutil.move(file, os.path.join(folder_name, file))
+                print(f"Moved {file} to {folder_name}")
+            else:
+                print(f"Waring: {file} not found, skipping.")
 
 # Execution
-DataManager.load_data('noncompliance.csv')
-DataManager.load_data('assets.csv')
-DataManager.generate_report()
+noncompliance_check = Path("noncompliance.csv")
+asset_check = Path("assets.csv")
+
+if noncompliance_check.exists() & asset_check.exists():
+    print("Files exists! Processing data...")
+    DataManager.load_data('noncompliance.csv')
+    DataManager.load_data('assets.csv')
+    current_report = DataManager.generate_report()
+    DataManager.archive_file(current_report)
+else:
+    if not noncompliance_check.exists() and not asset_check.exists():
+        print(f"Error: {noncompliance_check} & {asset_check} not found. Please check that the file has been added to the directory")
+    elif not noncompliance_check.exists():
+        print(f"Error: {noncompliance_check} not found. Please check that the file has been added to the directory")
+    elif not asset_check.exists():
+        print(f"Error: {asset_check} not found. Please check that the file has been added to the directory")
