@@ -1,0 +1,18 @@
+# Ignore all CSV files (Compliance data)
+*.csv
+
+# Ignore the generated report
+Compliance_Report02242026.txt
+
+# Python environment and cache
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.env
+
+# OS specific files
+.DS_Store
+Thumbs.db
