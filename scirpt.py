@@ -27,32 +27,29 @@ class Asset:
 
 @dataclass
 class NonComplianceData:
-    DeviceId: str
-    IntuneDeviceId: str
-    AadDeviceId: str
-    PartnerDeviceId: str
     DeviceName: str
-    DeviceType: str 
-    OSDescription: str
+    UPN: str
+    ComplianceState: str
+    ComplianceState_loc: str
+    OS: str
+    OS_loc: str
     OSVersion: str
     OwnerType: str
     OwnerType_loc: str
     LastContact: str
+    ManagementAgents: str
+    ManagementAgents_loc: str
     InGracePeriodUntil: str
-    IMEI: str
-    SerialNumber: str 
-    PrimaryUser: str
-    UserId: str
-    UPN: str
-    UserEmail: str
-    UserName: str
     DeviceHealthThreatLevel: str
     DeviceHealthThreatLevel_loc: str
+    UserEmail: str
+    UserName: str
+    IntuneDeviceId: str
+    AadDeviceId: str
+    UserId: str
+    IMEI: str
+    SerialNumber: str 
     RetireAfterDatetime: str
-    ComplianceState: str
-    ComplianceState_loc: str
-    OS: str 
-    OS_loc: str
 
 class DataManager:
     NonComplianceList: List[NonComplianceData] = []
@@ -70,8 +67,15 @@ class DataManager:
             reader.fieldnames = [name.strip() for name in reader.fieldnames]
             
             if file_path == 'noncompliance.csv':
+                # Map out what the dataclass expects
+                valid_fields = {f.name for f in NonComplianceData.__dataclass_fields__.values()}
+                
                 for row in reader:
-                    item = NonComplianceData(**row) 
+                    # Filter: Only keep CSV keys that match our dataclass variables
+                    filtered_row = {k: v for k, v in row.items() if k in valid_fields}
+                    
+                    # This prevents the "unexpected keyword argument" error
+                    item = NonComplianceData(**filtered_row) 
                     cls.NonComplianceList.append(item)
             
             elif file_path == 'assets.csv':
@@ -169,7 +173,7 @@ class DataManager:
 noncompliance_check = Path("noncompliance.csv")
 asset_check = Path("assets.csv")
 
-if noncompliance_check.exists() & asset_check.exists():
+if noncompliance_check.exists() and asset_check.exists():
     print("Files exists! Processing data...")
     DataManager.load_data('noncompliance.csv')
     DataManager.load_data('assets.csv')
